@@ -908,41 +908,11 @@ impl ParquetDataCatalog {
         start: Option<UnixNanos>,
         end: Option<UnixNanos>,
     ) -> anyhow::Result<Vec<String>> {
-        let mut files = Vec::new();
-
-        let start_u64 = start.map(|s| s.as_u64());
-        let end_u64 = end.map(|e| e.as_u64());
-
-        let base_dir = self.make_path(data_cls, None)?;
-
-        // Use recursive listing to match Python's glob behavior
-        let list_result = self.list_objects(&base_dir)?;
-
-        let mut file_paths: Vec<String> = list_result
+        Ok(self
+            .list_prefix_files_with_criteria(data_cls, identifiers, start, end)?
             .into_iter()
-            .filter_map(|object| {
-                let path_str = object.location.to_string();
-                if path_str.ends_with(".parquet") {
-                    Some(path_str)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        if let Some(identifiers) = identifiers {
-            file_paths =
-                filter_identifier_files(file_paths, identifiers, is_parquet_bar_prefix(data_cls));
-        }
-
-        // Apply timestamp filtering
-        file_paths.retain(|file_path| query_intersects_filename(file_path, start_u64, end_u64));
-
-        for file_path in file_paths {
-            files.push(self.path_for_query_list(&file_path));
-        }
-
-        Ok(files)
+            .map(|file_path| self.path_for_query_list(&file_path))
+            .collect())
     }
 
     /// Queries quote tick data for the specified instrument(s) and time range.

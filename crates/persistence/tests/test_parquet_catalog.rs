@@ -2157,6 +2157,38 @@ fn test_rust_query_files_with_multiple_files() {
 }
 
 #[rstest]
+fn test_query_files_for_identifiers_excludes_other_identifier_directories(
+    #[values(false, true)] remote: bool,
+) {
+    // `AUDUSD.SIM` is a prefix of `AUDUSD.SIMX`, and the non-ASCII directory name is
+    // percent-encoded in object store keys
+    let (_temp_dir, catalog) = create_temp_catalog_on_store(remote);
+    for instrument_id in ["AUD/USD.SIM", "AUD/USD.SIMX", NON_ASCII_IDENTIFIER] {
+        let quotes = create_quote_ticks_for_instrument(instrument_id, 1_000, 2);
+        catalog.write_to_parquet(&quotes, None, None, None).unwrap();
+    }
+    let data_type = CatalogDataType::from(NautilusDataType::QuoteTick);
+    // `AUDUSD.SIM` names the same directory as `AUD/USD.SIM`
+    let identifiers = vec![
+        "AUD/USD.SIM".to_string(),
+        "AUDUSD.SIM".to_string(),
+        NON_ASCII_IDENTIFIER.to_string(),
+    ];
+
+    let queried = catalog
+        .query_files(&data_type, Some(identifiers.clone()), None, None)
+        .unwrap();
+    let listed = catalog
+        .list_parquet_files_with_criteria(&data_type, Some(&identifiers), None, None)
+        .unwrap();
+
+    for files in [queried, listed] {
+        assert_eq!(files.len(), 2);
+        assert!(files.iter().all(|file| !file.contains("SIMX")));
+    }
+}
+
+#[rstest]
 fn test_rust_get_intervals_empty() {
     let (_temp_dir, catalog) = create_temp_catalog();
 

@@ -373,7 +373,7 @@ impl ParquetDataCatalog {
         Ok(all_files)
     }
 
-    fn list_prefix_files_with_criteria(
+    pub(super) fn list_prefix_files_with_criteria(
         &self,
         data_cls: &str,
         identifiers: Option<&[String]>,
@@ -383,10 +383,27 @@ impl ParquetDataCatalog {
         let start_u64 = start.map(|s| s.as_u64());
         let end_u64 = end.map(|e| e.as_u64());
 
-        let base_dir = self.make_path(data_cls, None)?;
+        // Bars live under bar type directories, which an instrument ID matches only by prefix
+        let mut directories = match identifiers {
+            Some(identifiers) if !is_parquet_bar_prefix(data_cls) => identifiers
+                .iter()
+                .map(|identifier| self.make_path(data_cls, Some(identifier)))
+                .collect::<anyhow::Result<Vec<_>>>()?,
+            _ => vec![self.make_path(data_cls, None)?],
+        };
+        directories.sort();
+        directories.dedup();
 
-        // Use recursive listing to match Python's glob behavior
-        let mut all_files = self.list_parquet_files(&base_dir)?;
+        let mut objects = Vec::new();
+        for directory in &directories {
+            objects.extend(self.list_objects(directory)?);
+        }
+
+        let mut all_files: Vec<String> = objects
+            .into_iter()
+            .map(|object| object.location.to_string())
+            .filter(|path| path.ends_with(".parquet"))
+            .collect();
 
         if let Some(identifiers) = identifiers {
             all_files =
