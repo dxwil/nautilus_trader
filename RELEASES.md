@@ -15,6 +15,7 @@ Released on TBD (UTC).
 - Added `HttpClient` certificate support through `certs_dir`
 - Added Postgres cache support for actor and strategy state, synthetics, heartbeat writes, and entity deletion
 - Added `OrderModifyDenied` and `OrderCancelDenied` events and strategy and execution algorithm callbacks
+- Added Python `ParquetDataCatalog.query_instrument_statuses` and `query_instrument_closes`
 - Added sandbox execution matching against `OrderBookDepth` snapshots (#5436), thanks @graceyangfan
 - Added Betfair certificate login through `certs_dir`
 - Added CoinAPI flat-file support for numeric book update codes
@@ -68,6 +69,9 @@ Released on TBD (UTC).
 - Changed `DeribitInstrument` literals; add `is_cbe_routed: None` and `is_csr: None`
 - Changed Derive endpoint overrides to `SecretString`; pass strings to builders or use `.into()` in struct literals
 - Changed Lighter WebSocket enums with account transaction variants; update exhaustive matches
+- Changed Lighter execution to reject `readonly=true` URLs; use only a data client for read-only access
+- Changed Lighter `proxy_url` to require `http://` or `https://`; replace SOCKS proxy URLs
+- Changed Lighter slippage settings and overrides to require integers in `[0, 10_000)`; lower larger values
 - Changed Interactive Brokers futures IDs to two-digit years by default; use `futures_year_digits=1`, thanks @faysou
 - Changed Interactive Brokers futures-option IDs and underlyings to match `futures_year_digits`
 - Changed Interactive Brokers provider config literals; add `futures_year_digits: FuturesYearDigits::Two`
@@ -95,6 +99,12 @@ Released on TBD (UTC).
 - Fixed catalog display queries failing on clear-book deltas with no order side
 - Fixed closed-order and position purges ignoring `purge_from_database` in execution timers
 - Fixed Redis order and position deletion leaving routine snapshots and restoring purged positions
+- Fixed built-in Redis cache records ignoring `timestamps_as_iso8601`; disabled now writes nanosecond strings
+- Fixed external message bus payloads ignoring `timestamps_as_iso8601`
+- Fixed HTTP timeout overflow panicking instead of returning an error for excessive timeouts
+- Fixed Redis cache bulk loads ignoring `bulk_read_batch_size`
+- Fixed Redis cache decoding of v1 Cython currencies, instruments, accounts, and component state
+- Fixed Redis cache replay of v1 Cython order and position histories, including transformed orders
 - Fixed `Cache` indexing closed positions as open and excluding them from purging after insertion
 - Fixed NETTING realized PnL for cycles with equal PnL and after fill voids (#5534), thanks @d0ra-1h3-3xpl0ra
 - Fixed managed order book subscriptions reusing a cached book of a different type
@@ -106,7 +116,9 @@ Released on TBD (UTC).
 - Fixed queued timer callbacks logging missing-actor errors or targeting reused actor IDs after retirement
 - Fixed backtest timer cancellation across data gaps and tail flushes
 - Fixed `BacktestEngine` reset hiding component reset failures
+- Fixed `EmaCross`, `BookImbalanceActor`, and `DeltaNeutralVol` retaining runtime state on engine reset
 - Fixed streaming backtests failing to resume when the first batch has only data before the start time
+- Fixed Python `ForexSession.__repr__` identifying sessions as `PositionSide`
 - Fixed `ExecTester` panicking on unsupported `GTD` brackets
 - Fixed Postgres cache not persisting or restoring Greeks and yield curves with `save_market_data`
 - Fixed exchange-rate conversions failing on overflow despite a representable route or returning zero on underflow
@@ -121,6 +133,7 @@ Released on TBD (UTC).
 - Fixed Binance snapshot HTTP retries bypassing request-weight pacing
 - Fixed Binance REST pacing ignoring endpoint weights and USD-M funding and open-interest limits
 - Fixed blockchain currency collisions and missing token definitions during Redis/Postgres recovery
+- Fixed blockchain execution retries after host clock errors
 - Fixed Bybit batch modify orders not using the trade WebSocket batch amend
 - Fixed Bybit data client ignoring environment credentials when config credentials are omitted
 - Fixed Bybit execution client omitting trigger prices from HTTP and WebSocket amendments
@@ -145,6 +158,7 @@ Released on TBD (UTC).
 - Fixed Deribit reconciliation omitting in-scope orders, fills, and positions when the instrument is not cached
 - Fixed Deribit rejected order results emitting `OrderAccepted`
 - Fixed Deribit delayed submit acknowledgements reactivating tracking for terminal orders
+- Fixed Deribit post-terminal fills emitting `OrderFilled` instead of fill reports
 - Fixed Derive option recovery rejecting startup or replacing real fills due to fee-inclusive averages
 - Fixed Derive trade and funding history returning events outside requested nanosecond time bounds
 - Fixed Derive historical trade responses accepting trades for a different instrument
@@ -153,6 +167,9 @@ Released on TBD (UTC).
 - Fixed Hyperliquid startup reconciliation failing on truncated entry prices (#5530), thanks for reporting @mark1lah
 - Fixed Kraken Futures order-update cancellations closing tracked orders before their fills arrive
 - Fixed Lighter modification confirmation delay (#5517), thanks for reporting @AlphaTraderK
+- Fixed Lighter slippage overrides silently accepting invalid types and overflowing integers
+- Fixed Lighter public data startup failing on unused malformed credentials
+- Fixed Lighter execution config credential checks ignoring environment fallback
 - Fixed OKX order status reports accepting incomplete active coverage and discarding valid partial history
 - Fixed OKX order commands rejected before being written during WebSocket reconnects
 - Fixed OKX repeated logins preventing authentication recovery after interrupted reconnects
@@ -173,15 +190,26 @@ Released on TBD (UTC).
 - Improved Docker publishing with temporary digest directories isolated per job
 - Standardized module ordering checks to place unconditional modules before cfg-gated modules
 - Refined Polymarket limit submit responses and venue order ID lookup
+- Refined Polymarket report generation with HTTP collection on runtime workers (#5216)
 - Optimized empty command-queue drains and L1 order-book quote replacement
+- Upgraded `cargo-binstall` tool to v1.26.2
 - Upgraded `cargo-codspeed` tool to v6.0.0
+- Upgraded `cargo-hawk` tool to v0.1.17
 - Upgraded `cargo-nextest` tool to v0.9.150
+- Upgraded `prek` tool to v0.5.9
 - Upgraded `socket-cli` tool to v1.11.1
+- Upgraded `uv` tool to v0.13.6
+- Upgraded `uv` pre-commit hook to v0.13.6
 - Upgraded `arrow` and `parquet` crates to v59.3.2
 - Upgraded `aws-lc-rs` crate to v1.19.0
 - Upgraded `hypersync-client` crate to v2.0.0
+- Upgraded `log` crate to v0.4.35
+- Upgraded `redis` crate to v1.8.1
+- Upgraded `sysinfo` crate to v0.40.1
+- Upgraded `pytest` package (test) to v9.2.0
+- Upgraded `pytest-asyncio` package (test) to v1.4.1
 - Upgraded `ruff` package (dev) to v0.17.3
-- Upgraded `ty` package (dev) to v0.0.91
+- Upgraded `ty` package (dev) to v0.0.92
 
 ### Documentation Updates
 
